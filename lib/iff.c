@@ -155,4 +155,99 @@ ChunkFORM *get_iff_data(char *data)
     return 0;
 }
 
+static char *sort_bitplanes(char *input, unsigned short width, unsigned short height, unsigned short bitplanes)
+{
+    unsigned short row_bytes = ((width + 15) >> 4) << 1;
+    unsigned int data_byte_size = row_bytes * height * bitplanes;
+
+    char *output = malloc(data_byte_size);
+
+    int i = 0;
+
+    for(int w = 0; w < bitplanes; w++)
+    {
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < row_bytes; x++)
+            {   
+                int offset = (y * bitplanes * row_bytes) + (w * row_bytes) + x;
+
+                output[i++] = input[offset];
+            }
+        }
+    }
+
+    return output;
+}
+
+char *get_bitplanes(ChunkFORM *form)
+{
+    unsigned short row_bytes = ((form->bitmap_header->header->width + 15) >> 4) << 1;
+    unsigned int data_byte_size = row_bytes * form->bitmap_header->header->height * form->bitmap_header->header->bitplanes;
+
+    char *buffer = malloc(data_byte_size);
+    char *bitplanes;
+
+    if(form->bitmap_header->header->compress_type == 1)
+    {
+        unsigned int read_compressed = 0;
+        int counter = 0;
+
+        while(read_compressed < form->body->size)
+        {
+            int byte = (char)form->body->data[read_compressed++];
+
+            if(byte > 0 && byte < 127)
+            {
+                for(int i = 0; i < byte + 1; i++)
+                {
+                    buffer[counter++] = form->body->data[read_compressed++];
+                }
+            }
+            else if(byte > -127 && byte < -1)
+            {
+                char replicate_byte = form->body->data[read_compressed++];
+
+                for(int i = 0; i < -byte + 1; i++)
+                {
+                    buffer[counter++] = replicate_byte;
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Could not decompress image data!\n");            
+            }
+        }
+
+        bitplanes = sort_bitplanes(buffer, 
+            form->bitmap_header->header->width, 
+            form->bitmap_header->header->height,
+            form->bitmap_header->header->bitplanes);
+    }
+    else
+    {
+        bitplanes = sort_bitplanes(buffer, 
+            form->bitmap_header->header->width, 
+            form->bitmap_header->header->height,
+            form->bitmap_header->header->bitplanes);
+    }
+
+    return bitplanes;
+}
+
+unsigned short *get_palette(ChunkCMAP *cmap)
+{
+    unsigned short length = cmap->size / 3;
+
+    unsigned short *palette = malloc(sizeof(unsigned short) * length);
+
+    for(int i = 0; i < length; i ++)
+    {
+        palette[i] = (cmap->colors[i].red >> 4) << 8 | 
+                    (cmap->colors[i].green >> 4) << 4 |
+                    (cmap->colors[i].blue >> 4);
+    }
+
+    return palette;
+}
 

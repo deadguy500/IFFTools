@@ -1,6 +1,16 @@
-
-	SECTION data,DATA
-myData:
-
-	dc.w	$0000,$07cd,$049a,$07c6,$0cd4,$0fd3,$0f83,$0e6a,$0b6a,$0000
-	dc.w	$0000,$0000,$0000,$0000,$0000,$0000
+	dc.w	$0000
+    dc.w    $07cd
+    dc.w    $049a
+    dc.w    $07c6
+    dc.w    $0cd4
+    dc.w    $0fd3
+    dc.w    $0f83
+    dc.w    $0e6a
+    dc.w    $0b6a
+    dc.w    $0000
+	dc.w	$0000
+    dc.w    $0000
+    dc.w    $0000
+    dc.w    $0000
+    dc.w    $0000
+    dc.w    $0000
