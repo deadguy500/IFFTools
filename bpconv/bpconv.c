@@ -47,9 +47,7 @@ unsigned short length = cmap->size / 3;
 
             unsigned short value = red << 8 | green << 4 | blue;                                
               
-            //fprintf(palette_file, "\tdc.w\t$%d\n", value);
             fprintf(palette_file, "\tdc.w\t$%.4x\n", value);
-            //fputc(value, palette_file);
         }
 
         fclose(palette_file);        
