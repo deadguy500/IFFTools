@@ -113,6 +113,7 @@ static void write_bitplanes(ChunkFORM *form, char *name)
                 }
             }
 
+            fwrite(buffer, sizeof(char), data_byte_size, bitplanes_file);
             printf("counter: %d\n", counter);
         }
         else
