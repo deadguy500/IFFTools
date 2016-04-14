@@ -1,12 +1,12 @@
 	dc.w	$0000
-	dc.w	$07bc
-	dc.w	$0489
-	dc.w	$07b6
-	dc.w	$0bc4
-	dc.w	$0ec3
-	dc.w	$0e83
-	dc.w	$0d69
-	dc.w	$0b59
+	dc.w	$07cd
+	dc.w	$049a
+	dc.w	$07c6
+	dc.w	$0cd4
+	dc.w	$0fd3
+	dc.w	$0f83
+	dc.w	$0e6a
+	dc.w	$0b6a
 	dc.w	$0000
 	dc.w	$0000
 	dc.w	$0000

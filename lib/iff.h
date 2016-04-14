@@ -9,7 +9,7 @@ typedef struct _bitmapheader
     unsigned short y_coordinate;
     unsigned char bitplanes;
     unsigned char mask;
-    unsigned char compress_type;
+    unsigned char compress_type;            // rename
     unsigned char padding;
     unsigned short transparency;
     unsigned char x_aspect_ratio;
@@ -43,7 +43,7 @@ typedef struct _chunkbody
 {
     char *id;
     unsigned int size;
-    unsigned char *data;
+    unsigned char *data;  //char?
 } ChunkBODY;
 
 typedef struct _chunkothr
