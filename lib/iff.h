@@ -62,6 +62,9 @@ typedef struct _chunkform
     ChunkBODY *body;
 } ChunkFORM;
 
+//char *get_bitplanes(char *data);
+//char *get_palette(char *data);
+
 ChunkFORM *get_iff_data(char *data);
 
 #endif

@@ -38,15 +38,6 @@ unsigned short length = cmap->size / 3;
     {
         for(int i = 0; i < length; i ++)
         {
-            /*
-            unsigned short red = cmap->colors[i].red;      
-            red = (red * 15) / 255;
-            unsigned short green = cmap->colors[i].green;
-            green = (green * 15) / 255;
-            unsigned short blue = cmap->colors[i].blue;
-            blue = (blue * 15) / 255;
-            */
-
             unsigned short red = cmap->colors[i].red;      
             red = red >> 4;
             unsigned short green = cmap->colors[i].green;
@@ -68,6 +59,31 @@ unsigned short length = cmap->size / 3;
     }
 }
 
+static char *sort_bitplanes(char *input, unsigned short width, unsigned short height, unsigned short bitplanes)
+{
+    unsigned short row_bytes = ((width + 15) >> 4) << 1;
+    unsigned int data_byte_size = row_bytes * height * bitplanes;
+
+    char *output = malloc(data_byte_size);
+
+    int i = 0;
+
+    for(int w = 0; w < bitplanes; w++)
+    {
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < row_bytes; x++)
+            {   
+                int offset = (y * bitplanes * row_bytes) + (w * row_bytes) + x;
+
+                output[i++] = input[offset];
+            }
+        }
+    }
+
+    return output;
+}
+
 static void write_bitplanes(ChunkFORM *form, char *name)
 {
     FILE *bitplanes_file = fopen("testoutput/output_bitplanes.bin", "wb+");
@@ -78,6 +94,7 @@ static void write_bitplanes(ChunkFORM *form, char *name)
         unsigned int data_byte_size = row_bytes * form->bitmap_header->header->height * form->bitmap_header->header->bitplanes;
 
         char *buffer = malloc(data_byte_size);
+
 
         if(form->bitmap_header->header->compress_type == 1)
         {
@@ -93,7 +110,6 @@ static void write_bitplanes(ChunkFORM *form, char *name)
                     for(int i = 0; i < byte + 1; i++)
                     {
                         buffer[counter++] = form->body->data[read_compressed++];
-                        //printf("%.2x", form->body->data[read_compressed++]);
                     }
                 }
                 else if(byte > -127 && byte < -1)
@@ -103,7 +119,6 @@ static void write_bitplanes(ChunkFORM *form, char *name)
                     for(int i = 0; i < -byte + 1; i++)
                     {
                         buffer[counter++] = replicate_byte;
-                        //printf("%.2x", replicate_byte);
                     }
                 }
                 else
@@ -113,8 +128,14 @@ static void write_bitplanes(ChunkFORM *form, char *name)
                 }
             }
 
-            fwrite(buffer, sizeof(char), data_byte_size, bitplanes_file);
-            printf("counter: %d\n", counter);
+            char *bpls = sort_bitplanes(buffer, 
+                form->bitmap_header->header->width, 
+                form->bitmap_header->header->height,
+                form->bitmap_header->header->bitplanes);
+
+            fwrite(bpls, sizeof(char), data_byte_size, bitplanes_file);
+            // free buffer
+            //printf("counter: %d\n", counter);
         }
         else
         {
@@ -192,6 +213,7 @@ static void print_image_data(ChunkFORM *form)
 
 int main(int argc,char *argv[])
 {
+
     FILE *file = fopen("testinput/rainbow.iff", "rb");
 
     if (file != 0) 
