@@ -28,6 +28,59 @@ static size_t filesize(FILE *file, const char *name)
     return 0;
 }
 
+static void write_palette(ChunkCMAP *cmap, char *name)
+{
+unsigned short length = cmap->size / 3;
+
+    FILE *palette_file = fopen("testoutput/output_palette.txt", "w+");
+
+    if(palette_file)
+    {
+        for(int i = 0; i < length; i ++)
+        {
+            unsigned short red = cmap->colors[i].red;      
+            red = (red * 15) / 255;
+            unsigned short green = cmap->colors[i].green;
+            green = (green * 15) / 255;
+            unsigned short blue = cmap->colors[i].blue;
+            blue = (blue * 15) / 255;
+
+            unsigned short value = red << 8 | green << 4 | blue;                                
+              
+            //fprintf(palette_file, "\tdc.w\t$%d\n", value);
+            fprintf(palette_file, "\tdc.w\t$%.4x\n", value);
+            //fputc(value, palette_file);
+        }
+
+        fclose(palette_file);        
+    }
+    else
+    {
+        // FIX ME!
+        fprintf(stderr, "Cannot open \"%s\"!\n", name);
+    }
+}
+
+static void write_bitplanes(ChunkBODY *body, char *name)
+{
+    FILE *bitplanes_file = fopen("testoutput/output_bitplanes.bin", "wb+");
+
+    if(bitplanes_file)
+    {
+    }
+    else
+    {
+        // FIX ME!
+        fprintf(stderr, "Cannot open \"%s\"!\n", name);
+    }
+}
+
+static void write_data(ChunkFORM *form, char *name)
+{
+    write_palette(form->color_map, name);
+    write_bitplanes(form->body, name);
+}
+
 static void print_image_data(ChunkFORM *form)
 {
     printf("--> %s\n", form->id);
@@ -79,12 +132,11 @@ static void print_image_data(ChunkFORM *form)
 
         printf("\n");
     }
-
 }
 
 int main(int argc,char *argv[])
 {
-    FILE *file = fopen("testdata/rainbow.iff", "rb");
+    FILE *file = fopen("testinput/rainbow.iff", "rb");
 
     if (file != 0) 
     {
@@ -98,9 +150,13 @@ int main(int argc,char *argv[])
             {
                 if (fread(imagedata, 1, file_length, file) == file_length)
                 {
-                    ChunkFORM *chunk_form = get_iff_data(imagedata);
+                    ChunkFORM *form = get_iff_data(imagedata);
 
-                    print_image_data(chunk_form);
+                    print_image_data(form);
+
+                    char *filename = "build/rainbow";
+
+                    write_data(form, filename);
                 }
                 else
                 {

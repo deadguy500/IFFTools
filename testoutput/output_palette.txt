@@ -1,0 +1,16 @@
+	dc.w	$0000
+	dc.w	$07bc
+	dc.w	$0489
+	dc.w	$07b6
+	dc.w	$0bc4
+	dc.w	$0ec3
+	dc.w	$0e83
+	dc.w	$0d69
+	dc.w	$0b59
+	dc.w	$0000
+	dc.w	$0000
+	dc.w	$0000
+	dc.w	$0000
+	dc.w	$0000
+	dc.w	$0000
+	dc.w	$0000
