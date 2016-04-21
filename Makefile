@@ -1,2 +1,19 @@
+#!/bin/sh
+
+CC        = gcc
+
+CFLAGS    = -std=c99 
+
+LIBFILES  = lib/file.c \
+			lib/iff.c
+
+BPCONV    = bpconv
+SPRCONV   = sprconv
+
 all:
-	gcc -std=c99 lib/file.c lib/iff.c bpconv/bpconv.c -o build/bpconv && ./build/bpconv testinput/input.iff
+	$(CC) $(CFLAGS) $(LIBFILES) $(BPCONV)/$(BPCONV).c -o build/$(BPCONV)
+	$(CC) $(CFLAGS) $(LIBFILES) $(SPRCONV)/$(SPRCONV).c -o build/$(SPRCONV)
+
+clean:
+	rm -rf build/$(BPCONV)
+	rm -rf build/$(SPRCONV)

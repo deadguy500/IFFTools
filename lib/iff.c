@@ -197,14 +197,14 @@ char *get_bitplanes(ChunkFORM *form)
         {
             int byte = (char)form->body->data[read_compressed++];
 
-            if(byte > 0 && byte < 127)
+            if(byte >= 0 && byte < 127)
             {
                 for(int i = 0; i < byte + 1; i++)
                 {
                     buffer[counter++] = form->body->data[read_compressed++];
                 }
             }
-            else if(byte > -127 && byte < -1)
+            else if(byte > -127 && byte <= -1)
             {
                 char replicate_byte = form->body->data[read_compressed++];
 
@@ -215,7 +215,7 @@ char *get_bitplanes(ChunkFORM *form)
             }
             else
             {
-                fprintf(stderr, "Could not decompress image data!\n");            
+                fprintf(stderr, "Could not decompress image data!\n");
             }
         }
 
