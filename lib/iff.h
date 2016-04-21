@@ -1,7 +1,7 @@
 #ifndef _IFF_H_
 #define _IFF_H_
 
-typedef struct _bitmapheader
+typedef struct _iffbitmapheader
 {
     unsigned short width;
     unsigned short height;           
@@ -9,64 +9,64 @@ typedef struct _bitmapheader
     unsigned short y_coordinate;
     unsigned char bitplanes;
     unsigned char mask;
-    unsigned char compress_type;            // rename
+    unsigned char compress;
     unsigned char padding;
     unsigned short transparency;
     unsigned char x_aspect_ratio;
     unsigned char y_aspect_ratio;
     unsigned short page_width;
     unsigned short page_height;
-} BitmapHeader;
+} IFFBitmapHeader;
 
-typedef struct _chunkbmhd
+typedef struct _iffchunkbmhd
 {
     char *id;
     unsigned int size;
-    BitmapHeader *header;
-} ChunkBMHD;
+    IFFBitmapHeader *header;
+} IFFChunkBMHD;
 
-typedef struct _cmapcolor
+typedef struct _iffcmapcolor
 {
     unsigned char red;
     unsigned char green;
     unsigned char blue;
-} CmapColor;
+} IFFCmapColor;
 
-typedef struct _chunkcmap
+typedef struct _iffchunkcmap
 {
     char *id;
     unsigned int size;
-    CmapColor *colors;
-} ChunkCMAP;
+    IFFCmapColor *colors;
+} IFFChunkCMAP;
 
-typedef struct _chunkbody
+typedef struct _iffchunkbody
 {
     char *id;
     unsigned int size;
     unsigned char *data;  //char?
-} ChunkBODY;
+} IFFChunkBODY;
 
-typedef struct _chunkothr
+typedef struct _iffchunkothr
 {
     char *id;
     unsigned int size;
-} ChunkOTHR;
+} IFFChunkOTHR;
 
-typedef struct _chunkform
+typedef struct _iffchunkform
 {
     char *id;
     unsigned int size;
     char *type;
-    ChunkBMHD *bitmap_header;
-    ChunkCMAP *color_map;
-    ChunkBODY *body;
-} ChunkFORM;
+    IFFChunkBMHD *bmhd;
+    IFFChunkCMAP *cmap;
+    IFFChunkBODY *body;
+} IFFChunkFORM;
 
-ChunkFORM *get_iff_data(char *data);
+IFFChunkFORM *iff_get_data(char *data);
 
-char *get_bitplanes(ChunkFORM *form);
+char *iff_get_bitplanes(IFFChunkFORM *form);
 
-unsigned short *get_palette(ChunkCMAP *cmap);
+unsigned short *iff_get_palette(IFFChunkCMAP *cmap);
 
 
 #endif

@@ -4,10 +4,24 @@
 
 #include "iff.h"
 
+#define     ID_SIZE         4   // Number of bytes
+
+#define     FORM_ID_SIZE    4
+#define     FORM_SIZE_SIZE  4
+#define     TYPE_SIZE       4
+#define     BMHD_ID_SIZE    4
+#define     BMHD_SIZE_SIZE  4
+#define     CMAP_ID_SIZE    4
+#define     CMAP_SIZE_SIZE  4
+#define     BODY_ID_SIZE    4
+#define     BODY_SIZE_SIZE  4
+#define     OTHR_ID_SIZE    4
+#define     OTHR_SIZE_SIZE  4
+
 static char *get_id(char *data)
 {
-    char *id = malloc(4);
-    strncpy(id, data, 4);
+    char *id = malloc(ID_SIZE);
+    strncpy(id, data, ID_SIZE);
 
     return id;
 }
@@ -33,20 +47,20 @@ static char *get_type(char *data)
     return type;
 }
 
-static ChunkBMHD *get_bmhd(char *data)
+static IFFChunkBMHD *get_bmhd(char *data)
 {
-    ChunkBMHD *bmhd = malloc(sizeof(ChunkBMHD));
+    IFFChunkBMHD *bmhd = malloc(sizeof(IFFChunkBMHD));
     bmhd->id = get_id(data);
     bmhd->size = get_size(data);
 
-    bmhd->header = malloc(sizeof(BitmapHeader));
+    bmhd->header = malloc(sizeof(IFFBitmapHeader));
     bmhd->header->width = (unsigned char)data[8] << 8 | (unsigned char)data[9]; 
     bmhd->header->height = (unsigned char)data[10] << 8 | (unsigned char)data[11]; 
     bmhd->header->x_coordinate = (unsigned char)data[12] << 8 | (unsigned char)data[13]; 
     bmhd->header->y_coordinate = (unsigned char)data[14] << 8 | (unsigned char)data[15]; 
     bmhd->header->bitplanes = data[16];
     bmhd->header->mask = data[17];
-    bmhd->header->compress_type = data[18];
+    bmhd->header->compress = data[18];
     bmhd->header->padding = data[19];
     bmhd->header->transparency = (unsigned char)data[20] << 8 | (unsigned char)data[21]; 
     bmhd->header->x_aspect_ratio = data[22];
@@ -57,16 +71,16 @@ static ChunkBMHD *get_bmhd(char *data)
     return bmhd;
 }
 
-static ChunkCMAP *get_cmap(char *data)
+static IFFChunkCMAP *get_cmap(char *data)
 {
-    ChunkCMAP *cmap = malloc(sizeof(ChunkCMAP));
+    IFFChunkCMAP *cmap = malloc(sizeof(IFFChunkCMAP));
 
     cmap->id = get_id(data);
     cmap->size = get_size(data);
 
     int num_colors = cmap->size / 3;
 
-    CmapColor *colors = malloc(sizeof(CmapColor) * num_colors);
+    IFFCmapColor *colors = malloc(sizeof(IFFCmapColor) * num_colors);
 
     int a = 8;
 
@@ -84,9 +98,9 @@ static ChunkCMAP *get_cmap(char *data)
     return cmap;
 }
 
-static ChunkBODY *get_body(char *data)
+static IFFChunkBODY *get_body(char *data)
 {
-    ChunkBODY *body = malloc(sizeof(ChunkBODY));
+    IFFChunkBODY *body = malloc(sizeof(IFFChunkBODY));
 
     body->id = get_id(data);
     body->size = get_size(data);
@@ -100,59 +114,14 @@ static ChunkBODY *get_body(char *data)
     return body;
 }
 
-static ChunkOTHR *get_other(char *data)
+static IFFChunkOTHR *get_other(char *data)
 {
-    ChunkOTHR *other = malloc(sizeof(ChunkOTHR));
+    IFFChunkOTHR *other = malloc(sizeof(IFFChunkOTHR));
 
     other->id = get_id(data);
     other->size = get_size(data);
 
     return other;
-}
-
-ChunkFORM *get_iff_data(char *data)
-{
-    if(strncmp(data, "FORM", 4) == 0)
-    {
-        ChunkFORM *form = malloc(sizeof(ChunkFORM));
-        form->id = get_id(data);
-        form->size = get_size(data);
-        form->type = get_type(data);
-
-        char *data_ptr = data + 12;
-
-        for(int i = 12; i < form->size - 4;)
-        {
-            if(strncmp(data_ptr, "BMHD", 4) == 0)
-            {
-                form->bitmap_header = get_bmhd(data_ptr);
-                i += form->bitmap_header->size + 8;
-                data_ptr = data_ptr + form->bitmap_header->size + 8;
-            }
-            else if(strncmp(data_ptr, "CMAP", 4) == 0)
-            {
-                form->color_map = get_cmap(data_ptr);
-                i += form->color_map->size + 8;
-                data_ptr = data_ptr + form->color_map->size + 8;
-            }
-            else if(strncmp(data_ptr, "BODY", 4) == 0)
-            {
-                form->body = get_body(data_ptr);
-                i += form->body->size + 8;
-                data_ptr = data_ptr + form->body->size + 8;
-            }
-            else
-            {
-                ChunkOTHR *other = get_other(data_ptr);
-                i += other->size + 8;
-                data_ptr = data_ptr + other->size + 8;
-            }
-        }
-
-        return form;
-    }
-
-    return 0;
 }
 
 static char *sort_bitplanes(char *input, unsigned short width, unsigned short height, unsigned short bitplanes)
@@ -180,15 +149,56 @@ static char *sort_bitplanes(char *input, unsigned short width, unsigned short he
     return output;
 }
 
-char *get_bitplanes(ChunkFORM *form)
+IFFChunkFORM *iff_get_data(char *data)
 {
-    unsigned short row_bytes = ((form->bitmap_header->header->width + 15) >> 4) << 1;
-    unsigned int data_byte_size = row_bytes * form->bitmap_header->header->height * form->bitmap_header->header->bitplanes;
+    if(strncmp(data, "FORM", FORM_ID_SIZE) == 0)
+    {
+        IFFChunkFORM *form = malloc(sizeof(IFFChunkFORM));
+        form->id = get_id(data);
+        form->size = get_size(data);
+        form->type = get_type(data);
+
+        int offset = FORM_ID_SIZE + FORM_SIZE_SIZE + TYPE_SIZE;
+
+        for(int i = offset; i < form->size - 4;)
+        {
+            if(strncmp(&data[i], "BMHD", BMHD_ID_SIZE) == 0)
+            {
+                form->bmhd = get_bmhd(&data[i]);
+                i += form->bmhd->size + BMHD_ID_SIZE + BMHD_SIZE_SIZE;
+            }
+            else if(strncmp(&data[i], "CMAP", CMAP_ID_SIZE) == 0)
+            {
+                form->cmap = get_cmap(&data[i]);
+                i += form->cmap->size + CMAP_ID_SIZE + CMAP_SIZE_SIZE;
+            }
+            else if(strncmp(&data[i], "BODY", BODY_ID_SIZE) == 0)
+            {
+                form->body = get_body(&data[i]);
+                i += form->body->size + BODY_ID_SIZE + BODY_SIZE_SIZE;
+            }
+            else
+            {
+                IFFChunkOTHR *other = get_other(&data[i]);
+                i += other->size + OTHR_ID_SIZE + OTHR_SIZE_SIZE;
+            }
+        }
+
+        return form;
+    }
+
+    return 0;
+}
+
+char *iff_get_bitplanes(IFFChunkFORM *form)
+{
+    unsigned short row_bytes = ((form->bmhd->header->width + 15) >> 4) << 1;
+    unsigned int data_byte_size = row_bytes * form->bmhd->header->height * form->bmhd->header->bitplanes;
 
     char *buffer = malloc(data_byte_size);
     char *bitplanes;
 
-    if(form->bitmap_header->header->compress_type == 1)
+    if(form->bmhd->header->compress == 1)
     {
         unsigned int read_compressed = 0;
         int counter = 0;
@@ -220,22 +230,22 @@ char *get_bitplanes(ChunkFORM *form)
         }
 
         bitplanes = sort_bitplanes(buffer, 
-            form->bitmap_header->header->width, 
-            form->bitmap_header->header->height,
-            form->bitmap_header->header->bitplanes);
+            form->bmhd->header->width, 
+            form->bmhd->header->height,
+            form->bmhd->header->bitplanes);
     }
     else
     {
         bitplanes = sort_bitplanes(buffer, 
-            form->bitmap_header->header->width, 
-            form->bitmap_header->header->height,
-            form->bitmap_header->header->bitplanes);
+            form->bmhd->header->width, 
+            form->bmhd->header->height,
+            form->bmhd->header->bitplanes);
     }
 
     return bitplanes;
 }
 
-unsigned short *get_palette(ChunkCMAP *cmap)
+unsigned short *iff_get_palette(IFFChunkCMAP *cmap)
 {
     unsigned short length = cmap->size / 3;
 
