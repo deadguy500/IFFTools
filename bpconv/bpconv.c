@@ -94,7 +94,7 @@ int main(int argc,char *argv[])
             {
                 if (fread(imagedata, 1, file_length, file) == file_length)
                 {
-                    IFFChunkFORM *form = iff_get_data(imagedata);
+                    IFFChunkFORM *form = iff_get_form(imagedata);
 
                     unsigned short row_bytes = ((form->bmhd->header->width + 15) >> 4) << 1;
                     unsigned int bitplane_size = row_bytes * form->bmhd->header->height * 
@@ -102,12 +102,17 @@ int main(int argc,char *argv[])
 
                     char *bitplanes = iff_get_bitplanes(form);
                     write_bitplane_data(output_filename, bitplanes, bitplane_size);
+                    free(bitplanes);
 
                     unsigned short *palette = iff_get_palette(form->cmap);
                     write_palette_data(output_filename, palette, form->cmap->size / 3);
+                    free(palette);
 
-                    printf("Number of bitplanes:  %d\n", form->bmhd->header->bitplanes);
-                    printf("Number of colors:     %d\n", form->cmap->size / 3);
+                    printf(" Bitplanes:   %d\n", form->bmhd->header->bitplanes);
+                    printf(" Size:        %dx%d\n", form->bmhd->header->width, form->bmhd->header->height);
+                    printf(" Palette:     %d\n", form->cmap->size / 3);
+
+                    iff_free_form(form);
                 }
                 else
                 {

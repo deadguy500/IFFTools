@@ -5,6 +5,7 @@
 #include "iff.h"
 
 #define     ID_SIZE         4   // Number of bytes
+#define     TYPE_SIZE       4
 
 #define     FORM_ID_SIZE    4
 #define     FORM_SIZE_SIZE  4
@@ -18,6 +19,11 @@
 #define     OTHR_ID_SIZE    4
 #define     OTHR_SIZE_SIZE  4
 
+#define     COLOR_CHANS     3
+#define     RED_CHN         0
+#define     GREEN_CHN       1
+#define     BLUE_CHN        2
+
 static char *get_id(char *data)
 {
     char *id = malloc(ID_SIZE);
@@ -28,45 +34,75 @@ static char *get_id(char *data)
 
 static unsigned int get_size(char *data)
 {
-    char *data_ptr = data + 4;
-
-    unsigned int size = (unsigned char)data_ptr[0] << 24 | 
-                        (unsigned char)data_ptr[1] << 16 | 
-                        (unsigned char)data_ptr[2] << 8 | 
-                        (unsigned char)data_ptr[3];
-
-    return size;
+    return (unsigned char)data[0] << 24 | 
+            (unsigned char)data[1] << 16 | 
+            (unsigned char)data[2] << 8 | 
+            (unsigned char)data[3];
 }
 
 static char *get_type(char *data)
 {
-    char *data_ptr = data + 8;
-    char *type = malloc(4);
-    strncpy(type, data_ptr, 4);
+    char *type = malloc(TYPE_SIZE);
+    strncpy(type, data, TYPE_SIZE);
 
     return type;
+}
+
+static unsigned short get_header_width(char *data)
+{
+    return (unsigned char)data[8] << 8 | (unsigned char)data[9]; 
+}
+
+static unsigned short get_header_height(char *data)
+{
+    return (unsigned char)data[10] << 8 | (unsigned char)data[11];   
+}
+
+static unsigned short get_header_x_coord(char *data)
+{
+    return (unsigned char)data[12] << 8 | (unsigned char)data[13]; 
+}
+
+static unsigned short get_header_y_coord(char *data)
+{
+    return (unsigned char)data[14] << 8 | (unsigned char)data[15];
+}
+
+static unsigned short get_header_transparency(char *data)
+{
+    return (unsigned char)data[20] << 8 | (unsigned char)data[21]; 
+}
+
+static unsigned short get_header_page_width(char *data)
+{
+    return (unsigned char)data[24] << 8 | (unsigned char)data[25];
+}
+
+static unsigned short get_header_page_height(char *data)
+{
+    return (unsigned char)data[26] << 8 | (unsigned char)data[27];
 }
 
 static IFFChunkBMHD *get_bmhd(char *data)
 {
     IFFChunkBMHD *bmhd = malloc(sizeof(IFFChunkBMHD));
     bmhd->id = get_id(data);
-    bmhd->size = get_size(data);
+    bmhd->size = get_size(&data[BMHD_ID_SIZE]);
 
     bmhd->header = malloc(sizeof(IFFBitmapHeader));
-    bmhd->header->width = (unsigned char)data[8] << 8 | (unsigned char)data[9]; 
-    bmhd->header->height = (unsigned char)data[10] << 8 | (unsigned char)data[11]; 
-    bmhd->header->x_coordinate = (unsigned char)data[12] << 8 | (unsigned char)data[13]; 
-    bmhd->header->y_coordinate = (unsigned char)data[14] << 8 | (unsigned char)data[15]; 
+    bmhd->header->width = get_header_width(data); 
+    bmhd->header->height = get_header_height(data);
+    bmhd->header->x_coordinate = get_header_x_coord(data);
+    bmhd->header->y_coordinate = get_header_y_coord(data);
     bmhd->header->bitplanes = data[16];
     bmhd->header->mask = data[17];
     bmhd->header->compress = data[18];
     bmhd->header->padding = data[19];
-    bmhd->header->transparency = (unsigned char)data[20] << 8 | (unsigned char)data[21]; 
+    bmhd->header->transparency = get_header_transparency(data);
     bmhd->header->x_aspect_ratio = data[22];
     bmhd->header->y_aspect_ratio = data[23];
-    bmhd->header->page_width = (unsigned char)data[24] << 8 | (unsigned char)data[25]; 
-    bmhd->header->page_height = (unsigned char)data[26] << 8 | (unsigned char)data[27]; 
+    bmhd->header->page_width = get_header_page_width(data);
+    bmhd->header->page_height = get_header_page_height(data);
 
     return bmhd;
 }
@@ -76,21 +112,19 @@ static IFFChunkCMAP *get_cmap(char *data)
     IFFChunkCMAP *cmap = malloc(sizeof(IFFChunkCMAP));
 
     cmap->id = get_id(data);
-    cmap->size = get_size(data);
+    cmap->size = get_size(&data[CMAP_ID_SIZE]);
 
-    int num_colors = cmap->size / 3;
+    IFFCmapColor *colors = malloc(sizeof(IFFCmapColor) * cmap->size / COLOR_CHANS);
 
-    IFFCmapColor *colors = malloc(sizeof(IFFCmapColor) * num_colors);
+    int offset = CMAP_ID_SIZE + CMAP_SIZE_SIZE;
 
-    int a = 8;
-
-    for(int i = 0; i < num_colors; i++)
+    for(int i = 0; i < cmap->size / COLOR_CHANS; i++)
     {
-        colors[i].red = data[a + 0];
-        colors[i].green = data[a + 1];
-        colors[i].blue = data[a + 2];
+        colors[i].red = data[offset + RED_CHN];
+        colors[i].green = data[offset + GREEN_CHN];
+        colors[i].blue = data[offset + BLUE_CHN];
 
-        a += 3;
+        offset += COLOR_CHANS;
     }
 
     cmap->colors = colors;
@@ -103,12 +137,12 @@ static IFFChunkBODY *get_body(char *data)
     IFFChunkBODY *body = malloc(sizeof(IFFChunkBODY));
 
     body->id = get_id(data);
-    body->size = get_size(data);
+    body->size = get_size(&data[BODY_ID_SIZE]);
     body->data = malloc(body->size);
 
     for(int i = 0; i < body->size; i++)
     {
-        body->data[i] = data[8 + i];
+        body->data[i] = data[BODY_ID_SIZE + BODY_SIZE_SIZE + i];
     }
 
     return body;
@@ -119,7 +153,7 @@ static IFFChunkOTHR *get_other(char *data)
     IFFChunkOTHR *other = malloc(sizeof(IFFChunkOTHR));
 
     other->id = get_id(data);
-    other->size = get_size(data);
+    other->size = get_size(&data[OTHR_ID_SIZE]);
 
     return other;
 }
@@ -149,14 +183,14 @@ static char *sort_bitplanes(char *input, unsigned short width, unsigned short he
     return output;
 }
 
-IFFChunkFORM *iff_get_data(char *data)
+IFFChunkFORM *iff_get_form(char *data)
 {
     if(strncmp(data, "FORM", FORM_ID_SIZE) == 0)
     {
         IFFChunkFORM *form = malloc(sizeof(IFFChunkFORM));
         form->id = get_id(data);
-        form->size = get_size(data);
-        form->type = get_type(data);
+        form->size = get_size(&data[FORM_ID_SIZE]);
+        form->type = get_type(&data[FORM_ID_SIZE + FORM_SIZE_SIZE]);
 
         int offset = FORM_ID_SIZE + FORM_SIZE_SIZE + TYPE_SIZE;
 
@@ -181,6 +215,9 @@ IFFChunkFORM *iff_get_data(char *data)
             {
                 IFFChunkOTHR *other = get_other(&data[i]);
                 i += other->size + OTHR_ID_SIZE + OTHR_SIZE_SIZE;
+
+                free(other->id);
+                free(other);
             }
         }
 
@@ -259,5 +296,19 @@ unsigned short *iff_get_palette(IFFChunkCMAP *cmap)
     }
 
     return palette;
+}
+
+void iff_free_form(IFFChunkFORM *form)
+{
+    free(form->bmhd->header);
+    free(form->bmhd->id);
+    free(form->bmhd);
+    free(form->cmap->colors);
+    free(form->cmap->id);
+    free(form->cmap);
+    free(form->body->id);
+    free(form->body->data);
+    free(form->body);
+    free(form);
 }
 

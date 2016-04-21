@@ -62,11 +62,12 @@ typedef struct _iffchunkform
     IFFChunkBODY *body;
 } IFFChunkFORM;
 
-IFFChunkFORM *iff_get_data(char *data);
+IFFChunkFORM *iff_get_form(char *data);
 
 char *iff_get_bitplanes(IFFChunkFORM *form);
 
 unsigned short *iff_get_palette(IFFChunkCMAP *cmap);
 
+void iff_free_form(IFFChunkFORM *form);
 
 #endif
