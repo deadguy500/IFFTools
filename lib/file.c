@@ -8,6 +8,11 @@ int check_filename(char *filename)
 {
     const char *dot = strrchr(filename, '.');
 
+    if(dot == NULL)
+    {
+        return 1;
+    }
+
     if(strcmp(dot, ".iff"))
     {
         return 1;
