@@ -5,6 +5,7 @@
 #include "../lib/iff.h"
 #include "../lib/file.h"
 
+#define     SPRITE_BPLS          2
 #define     ATTACHED_BPLS        4
 
 static int attached = 0;
@@ -27,7 +28,7 @@ static void write_sprite_data(char *filename, char *data, int width, int height)
     unsigned short row_bytes = ((width + 15) >> 4) << 1;
     unsigned short sprites = (row_bytes / 2);
 
-    int length = (ATTACHED_BPLS * row_bytes * height) + ctrl_words * 8 * sprites * 2;
+    int length = (SPRITE_BPLS * row_bytes * height) + ctrl_words * 8 * sprites * 2; // ?
 
     char *sprite_data = malloc(sizeof(unsigned char) * length);
 
@@ -286,7 +287,6 @@ int main(int argc, char *argv[])
                     }
 
                     free(bitplanes);
-
                 }
                 else
                 {
